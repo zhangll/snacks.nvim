@@ -168,11 +168,16 @@ function M.actions.explorer_close_all(picker)
 end
 
 -- toggle "changed files only" view; forces a git status refresh so the
--- filtered tree reflects the current working-tree state
-function M.actions.explorer_git_only(picker)
+-- filtered tree reflects the current working-tree state.
+-- when switching to the full tree, collapse everything and reveal just the
+-- file the cursor was on, instead of dropping into an unrelated deep tree
+function M.actions.explorer_git_only(picker, item)
   picker.opts.git_only = not picker.opts.git_only
   Git.refresh(picker:cwd())
-  M.update(picker, { refresh = true })
+  if not picker.opts.git_only then
+    Tree:close_all(picker:cwd())
+  end
+  M.update(picker, { refresh = true, target = item and item.file or nil })
 end
 
 function M.actions.explorer_git_next(picker, item)
