@@ -259,7 +259,7 @@ function M.explorer(opts, ctx)
       end
       items[node.path] = item
       cb(item)
-    end, { hidden = opts.hidden, ignored = opts.ignored, exclude = opts.exclude, include = opts.include })
+    end, { hidden = opts.hidden, ignored = opts.ignored, exclude = opts.exclude, include = opts.include, git_only = opts.git_only })
   end
 end
 

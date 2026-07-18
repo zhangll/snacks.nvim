@@ -167,6 +167,14 @@ function M.actions.explorer_close_all(picker)
   M.update(picker, { refresh = true })
 end
 
+-- toggle "changed files only" view; forces a git status refresh so the
+-- filtered tree reflects the current working-tree state
+function M.actions.explorer_git_only(picker)
+  picker.opts.git_only = not picker.opts.git_only
+  Git.refresh(picker:cwd())
+  M.update(picker, { refresh = true })
+end
+
 function M.actions.explorer_git_next(picker, item)
   local node = Git.next(picker:cwd(), item and item.file)
   if node then

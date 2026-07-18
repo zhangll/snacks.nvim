@@ -18,6 +18,7 @@
 ---@class snacks.picker.explorer.Filter
 ---@field hidden? boolean show hidden files
 ---@field ignored? boolean show ignored files
+---@field git_only? boolean show only files with a git status (and their parent directories)
 ---@field exclude? string[] globs to exclude
 ---@field include? string[] globs to exclude
 
@@ -205,6 +206,23 @@ function Tree:walk(node, fn, opts)
   return false
 end
 
+-- node itself has a git status, or lives inside a directory reported dirty as a whole
+-- (untracked directories are reported as one `dir/` entry whose children carry no own status)
+---@param node snacks.picker.explorer.Node
+local function git_dirty(node)
+  if node.status then
+    return true
+  end
+  local parent = node.parent
+  while parent do
+    if parent.dir_status then
+      return true
+    end
+    parent = parent.parent
+  end
+  return false
+end
+
 ---@param filter snacks.picker.explorer.Filter
 function Tree:filter(filter)
   local exclude = filter.exclude and #filter.exclude > 0 and Snacks.picker.util.globber(filter.exclude)
@@ -212,6 +230,20 @@ function Tree:filter(filter)
   return function(node)
     -- takes precedence over all other filters
     if include and include(node.path) then
+      return true
+    end
+    if filter.git_only then
+      -- keep dirty nodes even when hidden (a modified dotfile is still a change),
+      -- but never resurrect ignored ones (their git status starts with `!`)
+      if not git_dirty(node) then
+        return false
+      end
+      if node.ignored and not filter.ignored then
+        return false
+      end
+      if exclude and exclude(node.path) then
+        return false
+      end
       return true
     end
     if node.hidden and not filter.hidden then
@@ -235,6 +267,15 @@ function Tree:get(cwd, cb, opts)
   assert_dir(cwd)
   local node = self:find(cwd)
   node.open = true
+  if opts.git_only and opts.expand ~= false then
+    -- git.lua creates node chains for every dirty path, so dirty directories exist
+    -- even before first expansion; open them all so the walk below reveals every change
+    self:walk(node, function(n)
+      if n.dir and not n.open and (n.status or n.dir_status) then
+        n.open = true
+      end
+    end, { all = true })
+  end
   local filter = self:filter(opts)
   self:walk(node, function(n)
     if n ~= node then
@@ -261,7 +302,7 @@ function Tree:is_dirty(cwd, opts)
     if n.dir and n.open and not n.expanded then
       dirty = true
     end
-  end, { hidden = opts.hidden, ignored = opts.ignored, exclude = opts.exclude, include = opts.include, expand = false })
+  end, { hidden = opts.hidden, ignored = opts.ignored, exclude = opts.exclude, include = opts.include, git_only = opts.git_only, expand = false })
   return dirty
 end
 

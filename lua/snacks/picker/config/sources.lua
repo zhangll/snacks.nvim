@@ -42,6 +42,7 @@ M.buffers = {
 ---@field git_status? boolean show git status (default: true)
 ---@field git_status_open? boolean show recursive git status for open directories
 ---@field git_untracked? boolean needed to show untracked git status
+---@field git_only? boolean show only files with a git status (and their parent directories)
 ---@field diagnostics? boolean show diagnostics
 ---@field diagnostics_open? boolean show recursive diagnostics for open directories
 ---@field watch? boolean watch for file changes
@@ -58,6 +59,8 @@ M.explorer = {
   git_status = true,
   git_status_open = false,
   git_untracked = true,
+  git_only = false,
+  toggles = { git_only = "g" },
   follow_file = true,
   focus = "list",
   auto_close = false,
@@ -96,6 +99,7 @@ M.explorer = {
         ["."] = "explorer_focus",
         ["I"] = "toggle_ignored",
         ["H"] = "toggle_hidden",
+        ["C"] = "explorer_git_only",
         ["Z"] = "explorer_close_all",
         ["]g"] = "explorer_git_next",
         ["[g"] = "explorer_git_prev",
